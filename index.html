@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SIAKAD SD KELAS 6</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <style>
+    body {
+        background-color: #f4f7f6; /* Warna latar abu-abu sangat muda yang bersih */
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .login-container {
+        width: 100%;
+        max-width: 420px;
+        padding: 15px;
+    }
+    .icon-circle {
+        width: 85px;
+        height: 85px;
+        background-color: #2c3e50; /* Warna biru gelap selaras dengan sidebar dashboard */
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto -42px; /* Menarik ikon ke atas menembus batas kartu */
+        position: relative;
+        z-index: 10;
+        border: 5px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .input-group-custom {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    .input-group-custom:focus-within {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    
+    <div class="icon-circle">
+    <i class="fa-solid fa-school fa-2x"></i>
+    </div>
+    
+    <div class="card border-0 shadow-lg rounded-4 pt-5 pb-4 px-4 bg-white">
+        <div class="card-body text-center mt-3">
+            
+            <h4 class="fw-bold text-dark mb-1">Selamat Datang</h4>
+            <p class="text-muted medium mb-1 fw-medium">Sistem Informasi Akademik Kelas 6</p>
+            <p class="text-muted small mb-4 fw-medium">SD Inpres 1 Sidole</p>
+
+            <div class="alert alert-danger py-2 small fw-bold rounded-3 shadow-sm" id="loginError" style="display: none;"></div>
+
+            <div id="formLogin">
+                
+                <div class="input-group mb-3 bg-light rounded-3 overflow-hidden input-group-custom">
+                    <span class="input-group-text bg-transparent border-0 text-muted px-3">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input type="text" id="username" class="form-control bg-transparent border-0 py-2 shadow-none fw-semibold" placeholder="Nama Pengguna" autocomplete="off">
+                </div>
+                
+                <div class="input-group mb-4 bg-light rounded-3 overflow-hidden input-group-custom">
+                    <span class="input-group-text bg-transparent border-0 text-muted px-3">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input type="password" id="password" class="form-control bg-transparent border-0 py-2 shadow-none fw-semibold" placeholder="Kata Sandi">
+                </div>
+                
+                <button type="button" id="btnLogin" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm" style="letter-spacing: 0.5px;" onclick="window.aksiLogin(event)">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Masuk Sistem
+                </button>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+        <small class="text-muted fw-semibold opacity-75">&copy; 2026 Hak Cipta Dilindungi</small>
+    </div>
+    
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+</body>
+</html>

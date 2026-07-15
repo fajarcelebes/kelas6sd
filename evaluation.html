@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penilaian & Perilaku - SD KELAS 6</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* Mengatur gaya dasar tab (abu-abu, tanpa garis bawah) */
+    .nav-tabs .nav-link {
+        border: none !important;
+        border-bottom: 3px solid transparent !important;
+        color: #6c757d !important; /* Warna abu-abu text-secondary */
+        transition: all 0.3s ease-in-out;
+    }
+    /* Mengatur gaya HANYA saat tab sedang aktif (biru, garis bawah tebal) */
+    .nav-tabs .nav-link.active {
+        border-bottom: 3px solid #0d6efd !important; /* Warna biru Bootstrap */
+        color: #0d6efd !important;
+    }
+  </style>
+
+</head>
+<body class="bg-light">
+
+  <div class="d-flex">
+    
+    <div class="sidebar p-3 d-flex flex-column text-white" style="min-height: 100vh; background-color: #2c3e50; width: 250px;">
+      <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-secondary mt-2 px-2">
+        <i class="fa-solid fa-school fa-xl text-info me-3"></i>
+        <span class="fs-5 fw-bold text-white">SD KELAS 6</span>
+      </div>
+      <ul class="nav nav-pills flex-column mb-auto gap-2">
+        <li><a href="dashboard.html" class="nav-link text-white"><i class="fa-solid fa-chart-pie me-2"></i> Dashboard</a></li>
+        <li><a href="student.html" class="nav-link text-white"><i class="fa-solid fa-users me-2"></i> Data Siswa </a></li>
+        <li><a href="attendance.html" class="nav-link text-white"><i class="fa-solid fa-clipboard-user me-2"></i> Kehadiran </a></li>
+        <li><a href="evaluation.html" class="nav-link text-white bg-primary"><i class="fa-solid fa-book-open-reader me-2"></i> Penilaian & Perilaku</a></li>
+      </ul>
+      <hr class="border-secondary">
+      <a href="#" class="nav-link text-danger fw-bold" onclick="window.aksiLogout()">
+        <i class="fa-solid fa-right-from-bracket me-2"></i> Keluar
+      </a>
+    </div>
+
+    <div class="main-content flex-grow-1 bg-light">
+      <header class="bg-white shadow-sm py-3 px-4 d-flex justify-content-between align-items-center mb-4">
+        <h4 class="m-0 fw-bold text-dark">Modul Penilaian & Perilaku</h4>
+        <div class="d-flex align-items-center">
+          <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" class="rounded-circle" width="35">
+        </div>
+      </header>
+
+      <div class="container-fluid px-4 pb-5">
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-header bg-white border-bottom p-0 pt-3 px-4">
+            <ul class="nav nav-tabs border-0" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#harian" type="button" role="tab"><i class="fa-solid fa-book me-2"></i>Penilaian Harian</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#formatif" type="button" role="tab"><i class="fa-solid fa-flask me-2"></i>Penilaian Formatif</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#perilaku" type="button" role="tab"><i class="fa-solid fa-face-smile me-2"></i>Dokumentasi Perilaku</button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="card-body p-4">
+            <div class="tab-content">
+              
+              <div class="tab-pane fade show active" id="harian" role="tabpanel">
+                <div class="row g-3 mb-4 bg-light p-3 rounded-3 border align-items-end">
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-secondary mb-1">Tahun Ajar</label>
+                    <select id="filterTahunHarian" class="form-select border-secondary-subtle" onchange="window.muatTabelNilai()">
+                      <option value="">-- Pilih --</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-secondary mb-1">Mata Pelajaran</label>
+                    <select id="mapelHarian" class="form-select border-secondary-subtle">
+                      <option value="mtk">Matematika</option>
+                      <option value="bin">B. Indonesia</option>
+                      <option value="ipas">IPAS</option>
+                      <option value="pkn">PKN</option>
+                      <option value="sbdp">SBDP</option>
+                      <option value="pjok">PJOK</option>
+                      <option value="bing">B. Inggris</option>
+                      <option value="agm">Agama</option>
+                      <option value="mulok">Mulok</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-secondary mb-1">Jenis Tugas / Keterangan</label>
+                    <input type="text" id="tugasHarian" class="form-control border-secondary-subtle" placeholder="Cth: Tugas LKS Hal 10">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-secondary mb-1">Tanggal</label>
+                    <input type="date" id="tglHarian" class="form-control border-secondary-subtle">
+                  </div>
+                </div>
+
+                <div id="areaTabelNilai" style="display: none;">
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover table-bordered align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="text-secondary small fw-bold text-center" width="5%">NO</th>
+                          <th class="text-secondary small fw-bold" width="20%">NISN</th>
+                          <th class="text-secondary small fw-bold">NAMA SISWA</th>
+                          <th class="text-secondary small fw-bold text-center" width="15%">NILAI (0-100)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbodyNilaiMassal"></tbody>
+                    </table>
+                  </div>
+                  <div class="text-end mt-4 pt-3 border-top">
+                    <button class="btn btn-primary px-5 fw-bold" id="btnSimpanMassal" onclick="window.simpanNilaiMassal()">
+                      <i class="fa-solid fa-floppy-disk me-2"></i>Simpan Nilai Harian
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tab-pane fade" id="formatif" role="tabpanel">
+                <div class="row g-2 mb-4 bg-light p-3 rounded-3 border align-items-end">
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Tahun Ajar</label>
+                    <select id="filterTahunFormatif" class="form-select form-select-sm border-secondary-subtle" onchange="window.muatTabelFormatif()">
+                      <option value="">-- Pilih --</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Mapel</label>
+                    <select id="mapelFormatif" class="form-select form-select-sm border-secondary-subtle">
+                      <option value="mtk">Matematika</option>
+                      <option value="bin">B. Indonesia</option>
+                      <option value="ipas">IPAS</option>
+                      <option value="pkn">PKN</option>
+                      <option value="sbdp">SBDP</option>
+                      <option value="pjok">PJOK</option>
+                      <option value="bing">B. Inggris</option>
+                      <option value="agm">Agama</option>
+                      <option value="mulok">Mulok</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Bab</label>
+                    <select id="babFormatif" class="form-select form-select-sm border-secondary-subtle">
+                      <option value="Bab 1">Bab 1</option><option value="Bab 2">Bab 2</option>
+                      <option value="Bab 3">Bab 3</option><option value="Bab 4">Bab 4</option>
+                      <option value="Bab 5">Bab 5</option><option value="Bab 6">Bab 6</option>
+                      <option value="Bab 7">Bab 7</option><option value="Bab 8">Bab 8</option>
+                      <option value="Bab 9">Bab 9</option><option value="Bab 10">Bab 10</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Topik</label>
+                    <select id="topikFormatif" class="form-select form-select-sm border-secondary-subtle">
+                      <option value="Topik 1">Topik 1</option><option value="Topik 2">Topik 2</option>
+                      <option value="Topik 3">Topik 3</option><option value="Topik 4">Topik 4</option>
+                      <option value="Topik 5">Topik 5</option><option value="Topik 6">Topik 6</option>
+                      <option value="Topik 7">Topik 7</option><option value="Topik 8">Topik 8</option>
+                      <option value="Topik 9">Topik 9</option><option value="Topik 10">Topik 10</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Tanggal</label>
+                    <input type="date" id="tglFormatif" class="form-control form-control-sm border-secondary-subtle">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-secondary mb-1">Judul Topik</label>
+                    <input type="text" id="judulBabFormatif" class="form-control form-control-sm border-secondary-subtle" placeholder="Cth: Pecahan">
+                  </div>
+                </div>
+
+                <div id="areaTabelFormatif" style="display: none;">
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover table-bordered align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="text-secondary small fw-bold text-center" width="5%">NO</th>
+                          <th class="text-secondary small fw-bold" width="20%">NISN</th>
+                          <th class="text-secondary small fw-bold">NAMA SISWA</th>
+                          <th class="text-secondary small fw-bold text-center" width="15%">NILAI (0-100)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbodyFormatifMassal"></tbody>
+                    </table>
+                  </div>
+                  <div class="text-end mt-4 pt-3 border-top">
+                    <button class="btn btn-success px-5 fw-bold" id="btnSimpanFormatif" onclick="window.simpanFormatifMassal()">
+                      <i class="fa-solid fa-floppy-disk me-2"></i>Simpan Nilai Formatif
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tab-pane fade" id="perilaku" role="tabpanel">
+                <form id="formPerilaku">
+                  <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                      <label class="form-label small fw-bold text-secondary">Tahun Ajar</label>
+                      <select id="tahunPerilaku" class="form-select border-secondary-subtle" onchange="window.muatSiswaPerilaku()" required>
+                        <option value="">-- Pilih Tahun --</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small fw-bold text-secondary">Pilih Siswa</label>
+                      <select id="siswaPerilaku" class="form-select border-secondary-subtle" required>
+                        <option value="">-- Pilih Siswa --</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small fw-bold text-secondary">Tanggal</label>
+                      <input type="date" id="tglPerilaku" class="form-control border-secondary-subtle" required>
+                    </div>
+                  </div>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-7">
+                      <label class="form-label small fw-bold text-secondary">Catatan Peristiwa / Karakter</label>
+                      <textarea id="catatanPerilaku" class="form-control border-secondary-subtle" rows="5" placeholder="Tuliskan pengamatan sikap, tindakan positif, atau pelanggaran..." required></textarea>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label small fw-bold text-secondary">Unggah Foto Dokumentasi (Opsional)</label>
+                      <div class="border rounded-3 p-3 bg-light text-center border-secondary-subtle">
+                        <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted mb-2"></i>
+                        <input type="file" id="fotoPerilaku" class="form-control form-control-sm" accept="image/*">
+                        <small class="text-muted d-block mt-2">Format: JPG/PNG</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-end mt-4 pt-3 border-top">
+                    <button type="submit" id="btnSimpanPerilaku" class="btn btn-warning px-5 fw-bold text-dark">
+                      <i class="fa-solid fa-floppy-disk me-2"></i>Simpan Catatan Perilaku
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script> 
+  
+  <script src="js/evaluation.js?v=2"></script>
+</body>
+</html>
