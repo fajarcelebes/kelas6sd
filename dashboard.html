@@ -169,39 +169,50 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4">
+          
           <div class="mb-3">
               <label class="form-label fw-bold small text-secondary">Jenis Laporan</label>
-              <select id="exportJenisLaporan" class="form-select border-secondary-subtle font-weight-bold text-primary">
+              <select id="exportJenisLaporan" class="form-select border-secondary-subtle font-weight-bold text-primary" onchange="window.toggleFilterCetak()">
                   <option value="format1">Format 1 - Nilai Formatif per Topik</option>
                   <option value="format2">Format 2 - Nilai Sumatif per Bab & Semester</option>
+                  <option value="absen_bulanan">Rekap Kehadiran Bulanan Siswa</option>
               </select>
           </div>
+          
           <div class="mb-3">
               <label class="form-label fw-bold small text-secondary">Tahun Ajar</label>
-              <select id="exportTahunAjar" class="form-select border-secondary-subtle">
-              </select>
+              <select id="exportTahunAjar" class="form-select border-secondary-subtle"></select>
           </div>
-          <div class="mb-3">
-              <label class="form-label fw-bold small text-secondary">Mata Pelajaran</label>
-              <select id="exportMapel" class="form-select border-secondary-subtle">
-                  <option value="mtk">Matematika</option>
-                  <option value="bin">B. Indonesia</option>
-                  <option value="ipas">IPAS</option>
-                  <option value="pkn">PKN</option>
-                  <option value="sbdp">SBDP</option>
-                  <option value="pjok">PJOK</option>
-                  <option value="bing">B. Inggris</option>
-                  <option value="agm">Agama</option>
-                  <option value="mulok">Mulok</option>
-              </select>
+
+          <div id="filterAkademik">
+              <div class="mb-3">
+                  <label class="form-label fw-bold small text-secondary">Mata Pelajaran</label>
+                  <select id="exportMapel" class="form-select border-secondary-subtle">
+                      <option value="mtk">Matematika</option>
+                      <option value="bin">B. Indonesia</option>
+                      <option value="ipas">IPAS</option>
+                      <option value="pkn">PKN</option>
+                      <option value="sbdp">SBDP</option>
+                      <option value="pjok">PJOK</option>
+                      <option value="bing">B. Inggris</option>
+                      <option value="agm">Agama</option>
+                      <option value="mulok">Mulok</option>
+                  </select>
+              </div>
+              <div class="mb-4">
+                  <label class="form-label fw-bold small text-secondary">Semester & Jangkauan Bab</label>
+                  <select id="exportSemester" class="form-select border-secondary-subtle">
+                      <option value="ganjil">Semester Ganjil (Bab 1 - 5)</option>
+                      <option value="genap">Semester Genap (Bab 6 - 10)</option>
+                  </select>
+              </div>
           </div>
-          <div class="mb-4">
-              <label class="form-label fw-bold small text-secondary">Semester & Jangkauan Bab</label>
-              <select id="exportSemester" class="form-select border-secondary-subtle">
-                  <option value="ganjil">Semester Ganjil (Bab 1 - 5)</option>
-                  <option value="genap">Semester Genap (Bab 6 - 10)</option>
-              </select>
+
+          <div id="filterAbsensi" class="mb-4" style="display: none;">
+              <label class="form-label fw-bold small text-secondary">Pilih Bulan & Tahun</label>
+              <input type="month" id="exportBulan" class="form-control border-secondary-subtle">
           </div>
+
         </div>
         <div class="modal-footer bg-light border-top-0">
           <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
@@ -211,6 +222,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
   </div>
 
