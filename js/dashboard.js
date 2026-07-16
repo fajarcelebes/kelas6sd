@@ -414,15 +414,38 @@ window.cetakFormatifLayout = async function() {
     }
 };
 
-// =========================================================================
-// ROUTER CETAK LAPORAN
-// =========================================================================
+// Mengatur tampilan opsi berdasarkan jenis laporan yang dipilih
+window.toggleFilterCetak = function() {
+    const jenis = document.getElementById('exportJenisLaporan').value;
+    const filterAkademik = document.getElementById('filterAkademik');
+    const filterAbsensi = document.getElementById('filterAbsensi');
+    
+    if (jenis === 'absen_bulanan') {
+        if (filterAkademik) filterAkademik.style.display = 'none';
+        if (filterAbsensi) filterAbsensi.style.display = 'block';
+        
+        // Otomatis set bulan ke bulan saat ini jika belum diisi
+        const inputBulan = document.getElementById('exportBulan');
+        if (inputBulan && !inputBulan.value) {
+            const sekarang = new Date();
+            const yyyy = sekarang.getFullYear();
+            const mm = String(sekarang.getMonth() + 1).padStart(2, '0');
+            inputBulan.value = `${yyyy}-${mm}`;
+        }
+    } else {
+        if (filterAkademik) filterAkademik.style.display = 'block';
+        if (filterAbsensi) filterAbsensi.style.display = 'none';
+    }
+};
+
 window.prosesCetakLaporan = function() {
     const jenisLaporan = document.getElementById('exportJenisLaporan').value;
     if (jenisLaporan === 'format1') {
         window.cetakFormatifLayout();
     } else if (jenisLaporan === 'format2') {
         window.cetakSumatifLayout();
+    } else if (jenisLaporan === 'absen_bulanan') {
+        window.cetakRekapAbsen();
     }
 };
 
@@ -667,6 +690,221 @@ window.cetakSumatifLayout = async function() {
 
         } else {
             alert("Gagal memuat data dari server: " + result.message);
+        }
+    } catch(e) {
+        console.error(e);
+        alert("Terjadi kesalahan jaringan.");
+    } finally {
+        btn.innerHTML = textAwal;
+        btn.disabled = false;
+    }
+};
+
+
+// FUNGSI CETAK REKAPITULASI KEHADIRAN BULANAN (VERSI FIX)
+// =========================================================================
+window.cetakRekapAbsen = async function() {
+    const tahunAjar = document.getElementById('exportTahunAjar').value;
+    const bulanVal = document.getElementById('exportBulan').value; 
+
+    if (!tahunAjar || !bulanVal) { alert("Silakan pilih Tahun Ajar dan Bulan terlebih dahulu!"); return; }
+
+    const btn = document.getElementById('btnProsesExport');
+    const textAwal = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Menyiapkan Dokumen...`;
+    btn.disabled = true;
+
+    try {
+        const siswaTersaring = window.globalDataSiswa.filter(s => s.tahun_ajar === tahunAjar);
+        if (siswaTersaring.length === 0) { 
+            alert("Tidak ada data siswa pada tahun ajar ini."); 
+            btn.disabled = false; btn.innerHTML = textAwal; 
+            return; 
+        }
+
+        const response = await fetch(window.API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "read_absensi_bulanan", bulan: bulanVal })
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+            const dataAbsen = result.data; 
+            
+            const [yyyy, mm] = bulanVal.split('-');
+            const namaBulanCaps = new Date(yyyy, parseInt(mm) - 1, 1).toLocaleString('id-ID', { month: 'long' }).toUpperCase();
+            const jumlahHari = new Date(yyyy, mm, 0).getDate();
+
+            let daftarLiburNasional = [];
+            try {
+                const resLibur = await fetch(`https://api-harilibur.vercel.app/api?month=${parseInt(mm)}&year=${yyyy}`);
+                if (resLibur.ok) {
+                    const dataLibur = await resLibur.json();
+                    if (Array.isArray(dataLibur)) {
+                        daftarLiburNasional = dataLibur.filter(item => item.is_national_holiday).map(item => item.holiday_date);
+                    }
+                }
+            } catch (err) { console.warn("Gagal menarik data libur."); }
+
+            const liburTetap = [`${yyyy}-01-01`, `${yyyy}-05-01`, `${yyyy}-06-01`, `${yyyy}-08-17`, `${yyyy}-12-25`];
+            liburTetap.forEach(tgl => { if(!daftarLiburNasional.includes(tgl)) daftarLiburNasional.push(tgl); });
+
+            let dailyH = new Array(jumlahHari + 1).fill(0);
+            let dailyS = new Array(jumlahHari + 1).fill(0);
+            let dailyI = new Array(jumlahHari + 1).fill(0);
+            let dailyA = new Array(jumlahHari + 1).fill(0);
+            
+            const daftarHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+            let theadHTML = `<tr><th rowspan="3" style="width: 3%;">NO</th><th rowspan="3" style="width: 25%;">NAMA SISWA</th><th colspan="${jumlahHari}">KEHADIRAN PERBULAN</th><th colspan="4" style="width: 10%;">TOTAL</th></tr><tr>`;
+            
+            for(let d = 1; d <= jumlahHari; d++) {
+                let indeks = new Date(yyyy, parseInt(mm) - 1, d).getDay();
+                let isMerah = (indeks === 0 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
+                let bgH = isMerah ? 'background-color: #ffcccc; color: red;' : '';
+                theadHTML += `<th style="font-size: 7pt; padding: 2px 1px; ${bgH}"><div style="writing-mode: vertical-rl; transform: rotate(180deg); margin: 0 auto; height: 35px;">${daftarHari[indeks]}</div></th>`;
+            }
+            
+            theadHTML += `
+                <th style="font-size: 8pt; width: 2.5%; vertical-align: middle; background-color: #d1e7dd;">H</th>
+                <th style="font-size: 8pt; width: 2.5%; vertical-align: middle; background-color: #fff3cd;">S</th>
+                <th style="font-size: 8pt; width: 2.5%; vertical-align: middle; background-color: #e2e3e5;">I</th>
+                <th style="font-size: 8pt; width: 2.5%; vertical-align: middle; background-color: #f8d7da;">A</th>
+            </tr>
+            <tr>
+            `;
+            
+            for(let d = 1; d <= jumlahHari; d++) {
+                let isMerah = (new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
+                theadHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${isMerah ? 'background-color: #ffcccc; color: red;' : ''}">${d}</th>`;
+            }
+            theadHTML += `</tr>`;
+
+            let tbodyHTML = "";
+            siswaTersaring.forEach((siswa, index) => {
+                let row = `<tr><td>${index + 1}</td><td style="text-align:left;">${siswa.name}</td>`;
+                let tH=0, tS=0, tI=0, tA=0;
+
+                for(let d = 1; d <= jumlahHari; d++) {
+                    let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
+                    let isMerah = (new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0 || daftarLiburNasional.includes(tglStr));
+                    let rec = dataAbsen.find(r => String(r[2]).trim() === String(siswa.nisn).trim() && String(r[1]).trim() === tglStr);
+                    
+                    let sim = "", st = rec ? String(rec[3]).trim().toLowerCase() : "";
+                    let cellBg = isMerah ? 'background-color: #ffcccc;' : '';
+                    
+                    if(st==='h'||st==='hadir'){ sim="H"; tH++; dailyH[d]++; cellBg = 'background-color: #d1e7dd;'; }
+                    else if(st==='s'||st==='sakit'){ sim="S"; tS++; dailyS[d]++; cellBg = 'background-color: #fff3cd;'; }
+                    else if(st==='i'||st==='izin'||st==='ijin'){ sim="I"; tI++; dailyI[d]++; cellBg = 'background-color: #e2e3e5;'; }
+                    else if(st==='a'||st==='alpa'){ sim="A"; tA++; dailyA[d]++; cellBg = 'background-color: #f8d7da;'; }
+                    
+                    row += `<td style="font-size: 8pt; ${cellBg}">${sim}</td>`;
+                }
+                row += `<td style="background-color:#d1e7dd;">${tH||''}</td><td style="background-color:#fff3cd;">${tS||''}</td><td style="background-color:#e2e3e5;">${tI||''}</td><td style="background-color:#f8d7da; color:red;">${tA||''}</td></tr>`;
+                tbodyHTML += row;
+            });
+            // 3. MEMBANGUN FOOTER (KEHADIRAN PERHARI)
+            let tfootHTML = `
+                <tr>
+                    <th rowspan="4" style="vertical-align: middle; font-size: 9pt;">KEHADIRAN<br>PERHARI</th>
+                    <th style="text-align: right; font-size: 8pt; padding-right: 5px; background-color: #d1e7dd;">Hadir</th>
+            `;
+            for(let d=1; d<=jumlahHari; d++) {
+                let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
+                let isMinggu = new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0;
+                let bgF = (isMinggu || daftarLiburNasional.includes(tglStr)) ? 'background-color: #ffcccc;' : '';
+                tfootHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${bgF}">${dailyH[d] > 0 ? dailyH[d] : ''}</th>`;
+            }
+            tfootHTML += `<th colspan="4" rowspan="4" style="background: #f8f9fa;"></th></tr><tr>`;
+            
+            tfootHTML += `<th style="text-align: right; font-size: 8pt; padding-right: 5px; background-color: #fff3cd;">Sakit</th>`;
+            for(let d=1; d<=jumlahHari; d++) {
+                let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
+                let isMinggu = new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0;
+                let bgF = (isMinggu || daftarLiburNasional.includes(tglStr)) ? 'background-color: #ffcccc;' : '';
+                tfootHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${bgF}">${dailyS[d] > 0 ? dailyS[d] : ''}</th>`;
+            }
+            tfootHTML += `</tr><tr>`;
+            
+            tfootHTML += `<th style="text-align: right; font-size: 8pt; padding-right: 5px; background-color: #e2e3e5;">Ijin</th>`;
+            for(let d=1; d<=jumlahHari; d++) {
+                let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
+                let isMinggu = new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0;
+                let bgF = (isMinggu || daftarLiburNasional.includes(tglStr)) ? 'background-color: #ffcccc;' : '';
+                tfootHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${bgF}">${dailyI[d] > 0 ? dailyI[d] : ''}</th>`;
+            }
+            tfootHTML += `</tr><tr>`;
+            
+            tfootHTML += `<th style="text-align: right; font-size: 8pt; padding-right: 5px; background-color: #f8d7da;">Alpa</th>`;
+            for(let d=1; d<=jumlahHari; d++) {
+                let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
+                let isMinggu = new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0;
+                let bgF = (isMinggu || daftarLiburNasional.includes(tglStr)) ? 'background-color: #ffcccc;' : '';
+                tfootHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${bgF}">${dailyA[d] > 0 ? dailyA[d] : ''}</th>`;
+            }
+            tfootHTML += `</tr>`;
+
+
+            // 4. MERAKIT KESELURUHAN DOKUMEN HTML
+            const dokumenKertasHTML = `
+                <div style="font-family: Arial, sans-serif; font-size: 10pt; color: #000; padding: 10mm; background: #fff;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; font-size: 14pt; font-weight: bold; text-transform: uppercase;">BULAN ${namaBulanCaps} TAHUN ${yyyy}</h2>
+                    </div>
+                    
+                    <table class="tabel-nilai" border="1" cellpadding="2" cellspacing="0" style="width: 100%; text-align: center; border-collapse: collapse; font-size: 8pt;">
+                        <thead>${theadHTML}</thead>
+                        <tbody>${tbodyHTML}</tbody>
+                        <tfoot>${tfootHTML}</tfoot>
+                    </table>
+                    
+                    <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+                        <div style="width: 40%; font-size: 9pt;">
+                            <strong>Keterangan:</strong><br>
+                            <span style="display:inline-block; width:12px; height:12px; background-color:#ffcccc; border:1px solid #000; margin-right:5px; vertical-align:middle;"></span> Hari Minggu / Libur Nasional
+                        </div>
+                        <div style="width: 30%; text-align: center;">
+                            Sidole, ___________________<br><br>Wali Kelas 6<br><br><br><br><br>
+                            ( ___________________________ )<br>NIP. ___________________________
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let printIframe = document.getElementById('printIframeHidden');
+            if (!printIframe) {
+                printIframe = document.createElement('iframe');
+                printIframe.id = 'printIframeHidden';
+                printIframe.style.position = 'fixed';
+                printIframe.style.width = '0';
+                printIframe.style.height = '0';
+                printIframe.style.border = 'none';
+                document.body.appendChild(printIframe);
+            }
+
+            const doc = printIframe.contentDocument || printIframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Rekap Kehadiran - ${namaBulanCaps} ${yyyy}</title>
+                    <style>
+                        @page { size: A4 landscape; margin: 1cm; }
+                        body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .tabel-nilai th, .tabel-nilai td { border: 1px solid #000 !important; }
+                    </style>
+                </head>
+                <body>${dokumenKertasHTML}</body>
+                </html>
+            `);
+            doc.close();
+
+            bootstrap.Modal.getInstance(document.getElementById('modalExport')).hide();
+            setTimeout(() => { printIframe.contentWindow.focus(); printIframe.contentWindow.print(); }, 300);
+
+        } else {
+            alert("Gagal menarik data dari server: " + result.message);
         }
     } catch(e) {
         console.error(e);
