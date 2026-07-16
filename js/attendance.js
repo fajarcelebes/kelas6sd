@@ -210,10 +210,6 @@ window.simpanDataAbsensi = async function() {
 // FITUR RIWAYAT KEHADIRAN HARIAN
 // =========================================================================
 
-// =========================================================================
-// FITUR RIWAYAT KEHADIRAN HARIAN
-// =========================================================================
-
 // Mempersiapkan dropdown saat pop-up dibuka
 window.siapkanModalRiwayat = function() {
     const dropTahun = document.getElementById('riwayatTahunAjar');
@@ -301,7 +297,7 @@ window.tarikRiwayatHarian = async function() {
                     
                     // PENGATURAN WARNA & PERUBAHAN TEKS BERDASARKAN SINGKATAN
                     if(statLower === 'h' || statLower === 'hadir') {
-                        badgeClass = 'bg-primary'; 
+                        badgeClass = 'bg-success'; 
                         statusTampil = 'HADIR';
                     }
                     else if(statLower === 'i' || statLower === 'izin') {
