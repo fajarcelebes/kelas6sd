@@ -205,3 +205,141 @@ window.simpanDataAbsensi = async function() {
         btnSimpan.disabled = false;
     }
 };
+
+// =========================================================================
+// FITUR RIWAYAT KEHADIRAN HARIAN
+// =========================================================================
+
+// =========================================================================
+// FITUR RIWAYAT KEHADIRAN HARIAN
+// =========================================================================
+
+// Mempersiapkan dropdown saat pop-up dibuka
+window.siapkanModalRiwayat = function() {
+    const dropTahun = document.getElementById('riwayatTahunAjar');
+    
+    if (dropTahun) {
+        dropTahun.innerHTML = ''; 
+        
+        if (window.globalDataSiswa && window.globalDataSiswa.length > 0) {
+             const tahunUnik = [...new Set(window.globalDataSiswa.map(i => i.tahun_ajar).filter(t => t))].sort().reverse();
+             tahunUnik.forEach(t => dropTahun.innerHTML += `<option value="${t}">${t}</option>`);
+        } 
+        else {
+             const dropdownUtama = document.getElementById('filterTahunAjar') || document.querySelector('select[id*="Tahun"]');
+             if (dropdownUtama) {
+                 dropTahun.innerHTML = dropdownUtama.innerHTML;
+                 if(dropTahun.options.length > 0 && dropTahun.options[0].value === "") {
+                     dropTahun.remove(0);
+                 }
+             }
+        }
+    }
+    
+    const inputTanggal = document.getElementById('riwayatTanggal');
+    if (inputTanggal) inputTanggal.value = new Date().toISOString().split('T')[0];
+    
+    const tbody = document.getElementById('tbodyRiwayatAbsen');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Pilih tanggal dan klik <b>Lihat</b> untuk melihat data kehadiran.</td></tr>`;
+};
+
+// Menarik dan merender data dari database (Versi Pembaca Singkatan)
+window.tarikRiwayatHarian = async function() {
+    const tahunAjar = document.getElementById('riwayatTahunAjar').value;
+    const tanggal = document.getElementById('riwayatTanggal').value;
+    const tbody = document.getElementById('tbodyRiwayatAbsen');
+
+    if(!tahunAjar || !tanggal) { alert("Harap pilih Tahun Ajar dan Tanggal terlebih dahulu!"); return; }
+
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Mencari data di database...</td></tr>`;
+
+    try {
+        const responseAbsen = await fetch(window.API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "read_absensi_harian", tanggal: tanggal })
+        });
+        const resultAbsen = await responseAbsen.json();
+
+        if (resultAbsen.status === "success") {
+            const dataAbsen = resultAbsen.data; 
+            
+            if (!window.globalDataSiswa || window.globalDataSiswa.length === 0) {
+                const responseSiswa = await fetch(window.API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "read" })
+                });
+                const resultSiswa = await responseSiswa.json();
+                if(resultSiswa.status === "success") {
+                    window.globalDataSiswa = resultSiswa.data;
+                }
+            }
+
+            const siswaTersaring = (window.globalDataSiswa || []).filter(s => String(s.tahun_ajar).trim() === String(tahunAjar).trim());
+            
+            if (siswaTersaring.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Tidak ada siswa terdaftar di tahun ajar "${tahunAjar}".</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            let adaData = false;
+
+            siswaTersaring.forEach((siswa, index) => {
+                const record = dataAbsen.find(row => String(row[2]).trim() === String(siswa.nisn).trim());
+                
+                let statusTampil = "-";
+                let ket = "-";
+                let badgeClass = "bg-secondary"; // Warna default
+
+                if (record) {
+                    adaData = true;
+                    let statusRaw = record[3] || "-"; 
+                    ket = record[4] || "-";    
+                    
+                    // Membaca singkatan dan mengubah huruf kecil
+                    const statLower = String(statusRaw).trim().toLowerCase();
+                    
+                    // PENGATURAN WARNA & PERUBAHAN TEKS BERDASARKAN SINGKATAN
+                    if(statLower === 'h' || statLower === 'hadir') {
+                        badgeClass = 'bg-primary'; 
+                        statusTampil = 'HADIR';
+                    }
+                    else if(statLower === 'i' || statLower === 'izin') {
+                        badgeClass = 'bg-warning text-dark'; 
+                        statusTampil = 'IZIN';
+                    }
+                    else if(statLower === 's' || statLower === 'sakit') {
+                        badgeClass = 'bg-info text-dark'; 
+                        statusTampil = 'SAKIT';
+                    }
+                    else if(statLower === 'a' || statLower === 'alpa') {
+                        badgeClass = 'bg-danger'; 
+                        statusTampil = 'ALPA';
+                    } else {
+                        statusTampil = statusRaw.toUpperCase(); // Jika ada kode lain
+                    }
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center fw-bold text-secondary align-middle">${index + 1}</td>
+                        <td class="text-center text-secondary align-middle">${siswa.nisn}</td>
+                        <td class="fw-bold align-middle">${siswa.name}</td>
+                        <td class="text-center align-middle"><span class="badge ${badgeClass} w-100 py-2 shadow-sm">${statusTampil}</span></td>
+                        <td class="text-muted small align-middle">${ket}</td>
+                    </tr>
+                `;
+            });
+
+            if (!adaData) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger fw-bold"><i class="fa-solid fa-circle-exclamation me-2"></i>Belum ada rekaman kehadiran untuk tanggal ini.</td></tr>`;
+            }
+
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Gagal menarik data: ${resultAbsen.message}</td></tr>`;
+        }
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Terjadi kesalahan jaringan atau server tidak merespons.</td></tr>`;
+    }
+};
