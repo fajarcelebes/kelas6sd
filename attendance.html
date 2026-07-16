@@ -66,6 +66,11 @@
                         <i class="fa-solid fa-magnifying-glass me-2"></i>Tampilkan Daftar
                     </button>
                 </div>
+
+                <button class="btn btn-info fw-bold rounded-pill px-4 shadow-sm text-white ms-2" data-bs-toggle="modal" data-bs-target="#modalRiwayatAbsen" onclick="window.siapkanModalRiwayat()">
+                       <i class="fa-solid fa-clock-rotate-left me-2"></i>Riwayat Harian
+                    </button>
+
             </div>
         </div>
 
@@ -103,6 +108,59 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="modalRiwayatAbsen" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-info text-white">
+            <h5 class="modal-title fw-bold"><i class="fa-solid fa-list-check me-2"></i>Riwayat Kehadiran Harian</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            
+            <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-secondary mb-1">Tahun Ajar</label>
+                    <select id="riwayatTahunAjar" class="form-select border-secondary-subtle">
+                        </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-secondary mb-1">Pilih Tanggal</label>
+                    <input type="date" id="riwayatTanggal" class="form-control border-secondary-subtle">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="window.tarikRiwayatHarian()">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>Lihat
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th class="text-secondary small fw-bold" width="5%">NO</th>
+                            <th class="text-secondary small fw-bold" width="20%">NISN</th>
+                            <th class="text-secondary small fw-bold text-start">NAMA SISWA</th>
+                            <th class="text-secondary small fw-bold" width="15%">STATUS</th>
+                            <th class="text-secondary small fw-bold text-start" width="25%">KETERANGAN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyRiwayatAbsen">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Pilih tanggal dan klik <b>Lihat</b> untuk melihat data kehadiran.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+          </div>
+          <div class="modal-footer bg-light border-top-0">
+            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/auth.js"></script>
