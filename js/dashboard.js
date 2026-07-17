@@ -419,22 +419,25 @@ window.toggleFilterCetak = function() {
     const jenis = document.getElementById('exportJenisLaporan').value;
     const filterAkademik = document.getElementById('filterAkademik');
     const filterAbsensi = document.getElementById('filterAbsensi');
+    const filterNilaiHarian = document.getElementById('filterNilaiHarian');
     
+    // Reset (Sembunyikan semua)
+    if (filterAkademik) filterAkademik.style.display = 'none';
+    if (filterAbsensi) filterAbsensi.style.display = 'none';
+    if (filterNilaiHarian) filterNilaiHarian.style.display = 'none';
+    
+    // Tampilkan sesuai pilihan
     if (jenis === 'absen_bulanan') {
-        if (filterAkademik) filterAkademik.style.display = 'none';
         if (filterAbsensi) filterAbsensi.style.display = 'block';
-        
-        // Otomatis set bulan ke bulan saat ini jika belum diisi
         const inputBulan = document.getElementById('exportBulan');
         if (inputBulan && !inputBulan.value) {
             const sekarang = new Date();
-            const yyyy = sekarang.getFullYear();
-            const mm = String(sekarang.getMonth() + 1).padStart(2, '0');
-            inputBulan.value = `${yyyy}-${mm}`;
+            inputBulan.value = `${sekarang.getFullYear()}-${String(sekarang.getMonth() + 1).padStart(2, '0')}`;
         }
+    } else if (jenis === 'nilai_harian') {
+        if (filterNilaiHarian) filterNilaiHarian.style.display = 'block';
     } else {
         if (filterAkademik) filterAkademik.style.display = 'block';
-        if (filterAbsensi) filterAbsensi.style.display = 'none';
     }
 };
 
@@ -446,6 +449,8 @@ window.prosesCetakLaporan = function() {
         window.cetakSumatifLayout();
     } else if (jenisLaporan === 'absen_bulanan') {
         window.cetakRekapAbsen();
+    } else if (jenisLaporan === 'nilai_harian') {
+        window.downloadExcelNilai(); // Panggil fungsi baru Excel
     }
 };
 
@@ -913,4 +918,192 @@ window.cetakRekapAbsen = async function() {
         btn.innerHTML = textAwal;
         btn.disabled = false;
     }
+};
+
+// =========================================================================
+// FUNGSI TARIK DATA NILAI HARIAN & TAMPILKAN PRATINJAU (PREVIEW)
+// =========================================================================
+window.downloadExcelNilai = async function() {
+    const tahun = document.getElementById('exportTahunAjar').value;
+    const mapel = document.getElementById('exportMapelHarian').value; 
+    const mapelText = document.getElementById('exportMapelHarian').options[document.getElementById('exportMapelHarian').selectedIndex].text;
+    const tglMulai = document.getElementById('exportTglMulai').value;
+    const tglSelesai = document.getElementById('exportTglSelesai').value;
+
+    if (!tahun) { alert("Pilih Tahun Ajar terlebih dahulu!"); return; }
+
+    const btn = document.getElementById('btnProsesExport');
+    const textAwal = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Menyiapkan Pratinjau...`;
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(window.EVAL_API_URL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                action: "read_daily_nilai", 
+                tahun: tahun,
+                tglMulai: tglMulai, 
+                tglSelesai: tglSelesai 
+            })
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+            const mapelIndexMap = {
+                'daily_mtk': 6, 'daily_bin': 7, 'daily_ipas': 8, 'daily_mulok': 9, 
+                'daily_pkn': 10, 'daily_sbdp': 11, 'daily_pjok': 12, 'daily_bing': 13, 'daily_agm': 14
+            };
+            const targetIndex = mapelIndexMap[mapel];
+
+            let mapSiswa = {};
+            let daftarKolom = [];
+            let setKolomUnik = new Set();
+
+            result.data.forEach(row => {
+                let nama = row[3]; 
+                let topik = row[5]; 
+                let tanggal = row[1]; 
+                let nilai = row[targetIndex]; 
+                
+                if (nilai !== undefined && String(nilai).trim() !== "") {
+                    if (!mapSiswa[nama]) mapSiswa[nama] = {};
+                    let keyKolom = `${topik}|${tanggal}`; 
+                    mapSiswa[nama][keyKolom] = nilai;
+                    
+                    if(!setKolomUnik.has(keyKolom)) {
+                        setKolomUnik.add(keyKolom);
+                        daftarKolom.push({ key: keyKolom, topik: topik, tanggal: tanggal });
+                    }
+                }
+            });
+
+            // Susun Header
+            let headerBaris1 = ["NO", "NAMA SISWA"];
+            let headerBaris2 = ["", ""]; 
+            daftarKolom.forEach(kolom => {
+                headerBaris1.push(kolom.topik);
+                headerBaris2.push(kolom.tanggal);
+            });
+
+            let finalData = [headerBaris1, headerBaris2]; 
+
+            // Susun Data Siswa
+            const siswaTersaring = window.globalDataSiswa.filter(s => s.tahun_ajar === tahun);
+            siswaTersaring.forEach((s, index) => {
+                let row = [index + 1, s.name];
+                let dataSiswa = mapSiswa[s.name] || {};
+                daftarKolom.forEach(kolom => { row.push(dataSiswa[kolom.key] || ""); });
+                finalData.push(row);
+            });
+
+            // ==========================================
+            // MEMBUAT HTML TABEL UNTUK PRATINJAU TAMPILAN
+            // ==========================================
+            let tableHTML = `<table class="table table-bordered table-hover table-sm text-center align-middle" style="font-size: 9pt; white-space: nowrap;">`;
+            tableHTML += `<thead class="table-primary"><tr>`;
+            
+            // Baris Judul 1 (Topik)
+            finalData[0].forEach((col, idx) => {
+                if (idx === 0 || idx === 1) tableHTML += `<th rowspan="2">${col}</th>`;
+                else tableHTML += `<th>${col}</th>`;
+            });
+            tableHTML += `</tr><tr>`;
+            
+            // Baris Judul 2 (Tanggal)
+            finalData[1].forEach((col, idx) => {
+                if (idx > 1) tableHTML += `<th>${col}</th>`;
+            });
+            tableHTML += `</tr></thead><tbody>`;
+
+            // Baris Isi Nilai
+            for (let i = 2; i < finalData.length; i++) {
+                tableHTML += `<tr>`;
+                finalData[i].forEach((cell, idx) => {
+                    let textTengah = (idx === 1) ? 'text-start fw-semibold' : 'text-center';
+                    tableHTML += `<td class="${textTengah}">${cell}</td>`;
+                });
+                tableHTML += `</tr>`;
+            }
+            tableHTML += `</tbody></table>`;
+
+            // Atur Lebar Kolom untuk Excel nanti
+            let colWidths = [{wch: 5}, {wch: 30}]; 
+            daftarKolom.forEach(() => colWidths.push({wch: 15}));
+
+            let namaFile = `Nilai_Harian_${mapelText}_${tahun}`;
+            if (tglMulai && tglSelesai) namaFile += `_${tglMulai}_sd_${tglSelesai}`;
+
+            // SIMPAN DATA SEMENTARA DI WINDOW UNTUK DIUNDUH NANTI
+            window.tempExcelData = {
+                data: finalData,
+                merges: [{s:{r:0,c:0},e:{r:1,c:0}}, {s:{r:0,c:1},e:{r:1,c:1}}],
+                widths: colWidths,
+                filename: namaFile
+            };
+
+            // ==========================================
+            // TAMPILKAN KE DALAM MODAL BOOTSTRAP DINAMIS
+            // ==========================================
+            let previewModal = document.getElementById('modalPreviewExcel');
+            if(!previewModal) {
+                let modalStr = `
+                <div class="modal fade" id="modalPreviewExcel" tabindex="-1">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-content shadow-lg border-0">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-table me-2"></i>Pratinjau Data - ${mapelText}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body bg-light p-4 overflow-auto" id="previewExcelContent">
+                            </div>
+                            <div class="modal-footer bg-white border-top-0">
+                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+                                <button type="button" class="btn btn-success fw-bold rounded-pill px-4" onclick="window.eksekusiDownloadExcel()">
+                                    <i class="fa-solid fa-file-excel me-2"></i>Download Excel Sekarang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', modalStr);
+                previewModal = document.getElementById('modalPreviewExcel');
+            }
+
+            document.getElementById('previewExcelContent').innerHTML = tableHTML;
+            
+            // Sembunyikan Modal awal, Tampilkan Modal Preview
+            bootstrap.Modal.getInstance(document.getElementById('modalExport')).hide();
+            let bsPreview = new bootstrap.Modal(previewModal);
+            bsPreview.show();
+
+        } else {
+            alert("Gagal memuat data dari server: " + result.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Terjadi kesalahan jaringan saat menarik data.");
+    } finally {
+        btn.innerHTML = textAwal;
+        btn.disabled = false;
+    }
+};
+
+// =========================================================================
+// FUNGSI EKSEKUSI DOWNLOAD EXCEL (Dipanggil dari tombol di Modal Preview)
+// =========================================================================
+window.eksekusiDownloadExcel = function() {
+    if (!window.tempExcelData) { alert("Data Excel tidak ditemukan."); return; }
+    
+    let temp = window.tempExcelData;
+    
+    // Konversi Array ke Sheet
+    const ws = XLSX.utils.aoa_to_sheet(temp.data);
+    ws['!merges'] = temp.merges;
+    ws['!cols'] = temp.widths;
+
+    // Generate dan Download File
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Nilai Harian`);
+    XLSX.writeFile(wb, `${temp.filename}.xlsx`);
 };
