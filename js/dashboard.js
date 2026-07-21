@@ -866,7 +866,7 @@ window.cetakRekapAbsen = async function() {
                     <div style="margin-top: 20px; display: flex; justify-content: space-between;">
                         <div style="width: 40%; font-size: 9pt;">
                             <strong>Keterangan:</strong><br>
-                            <span style="display:inline-block; width:12px; height:12px; background-color:#ffcccc; border:1px solid #000; margin-right:5px; vertical-align:middle;"></span> Hari Minggu / Libur Nasional
+                            <span style="display:inline-block; width:12px; height:12px; background-color:#ffcccc; border:1px solid #000; margin-right:5px; vertical-align:middle;"></span> Hari Libur
                         </div>
                         <div style="width: 30%; text-align: center;">
                             Sidole, ___________________<br><br>Wali Kelas 6<br><br><br><br><br>
