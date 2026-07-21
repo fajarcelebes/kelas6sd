@@ -765,7 +765,7 @@ window.cetakRekapAbsen = async function() {
             
             for(let d = 1; d <= jumlahHari; d++) {
                 let indeks = new Date(yyyy, parseInt(mm) - 1, d).getDay();
-                let isMerah = (indeks === 0 || indeks === 6 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
+                let isMerah = (indeks === 0 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
                 let bgH = isMerah ? 'background-color: #ffcccc; color: red;' : '';
                 theadHTML += `<th style="font-size: 7pt; padding: 2px 1px; ${bgH}"><div style="writing-mode: vertical-rl; transform: rotate(180deg); margin: 0 auto; height: 35px;">${daftarHari[indeks]}</div></th>`;
             }
@@ -780,8 +780,7 @@ window.cetakRekapAbsen = async function() {
             `;
             
             for(let d = 1; d <= jumlahHari; d++) {
-                let hari = new Date(yyyy, parseInt(mm) - 1, d).getDay();
-                let isMerah = (hari === 0 || hari === 6 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
+                let isMerah = (new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0 || daftarLiburNasional.includes(`${yyyy}-${mm}-${String(d).padStart(2, '0')}`));
                 theadHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${isMerah ? 'background-color: #ffcccc; color: red;' : ''}">${d}</th>`;
             }
             theadHTML += `</tr>`;
@@ -793,8 +792,7 @@ window.cetakRekapAbsen = async function() {
 
                 for(let d = 1; d <= jumlahHari; d++) {
                     let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
-                    let hari = new Date(yyyy, parseInt(mm) - 1, d).getDay();
-                    let isMerah = (hari === 0 || hari === 6 || daftarLiburNasional.includes(tglStr));
+                    let isMerah = (new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0 || daftarLiburNasional.includes(tglStr));
                     let rec = dataAbsen.find(r => String(r[2]).trim() === String(siswa.nisn).trim() && String(r[1]).trim() === tglStr);
                     
                     let sim = "", st = rec ? String(rec[3]).trim().toLowerCase() : "";
@@ -818,9 +816,8 @@ window.cetakRekapAbsen = async function() {
             `;
             for(let d=1; d<=jumlahHari; d++) {
                 let tglStr = `${yyyy}-${mm}-${String(d).padStart(2, '0')}`;
-                let hari = new Date(yyyy, parseInt(mm) - 1, d).getDay();
-                let isLibur = (hari === 0 || hari === 6 || daftarLiburNasional.includes(tglStr));
-                let bgF = isLibur ? 'background-color: #ffcccc;' : '';
+                let isMinggu = new Date(yyyy, parseInt(mm) - 1, d).getDay() === 0;
+                let bgF = (isMinggu || daftarLiburNasional.includes(tglStr)) ? 'background-color: #ffcccc;' : '';
                 tfootHTML += `<th style="font-size: 8pt; padding: 2px 1px; ${bgF}">${dailyH[d] > 0 ? dailyH[d] : ''}</th>`;
             }
             tfootHTML += `<th colspan="4" rowspan="4" style="background: #f8f9fa;"></th></tr><tr>`;
