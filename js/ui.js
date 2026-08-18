@@ -36,13 +36,12 @@ window.perbesarFoto = function(url, dl) {
 };
 
 // =========================================================================
-// MENGEMBALIKAN FUNGSI LIHAT DETAIL SISWA (DENGAN AUTO-INJECT HTML)
+// FUNGSI LIHAT DETAIL SISWA 
 // =========================================================================
 window.lihatDetailSiswa = function(idSiswa) {
     const s = window.globalDataSiswa.find(item => String(item.id) === String(idSiswa));
     if (!s) return;
 
-    // 1. Membuat Wadah Modal Otomatis jika terhapus dari HTML
     let modalDetail = document.getElementById('modalDetailSiswa');
     if (!modalDetail) {
         const modalHTML = `
@@ -130,10 +129,15 @@ window.lihatDetailSiswa = function(idSiswa) {
                         </table>
                     </div>
 
-                    <div class="border-top pt-3 mt-3 text-center">
+                    <div class="border-top pt-3 mt-4 text-center">
                         <h6 class="small fw-bold text-secondary mb-3">Statistik Kehadiran Siswa</h6>
-                        <div style="position: relative; height: 200px; width: 100%; display: flex; justify-content: center;">
-                            <canvas id="donutChartKehadiran"></canvas>
+                        
+                        <div id="wadahChartAbsen" style="position: relative; height: 200px; width: 100%;">
+                            <canvas id="chartAbsenProfil"></canvas>
+                        </div>
+                        
+                        <div id="loadingKehadiran" class="small text-muted mt-2">
+                            <span class="spinner-border spinner-border-sm me-1"></span> Membaca data absensi dari server...
                         </div>
                     </div>
 
@@ -165,34 +169,104 @@ window.lihatDetailSiswa = function(idSiswa) {
     bootstrap.Modal.getOrCreateInstance(modalDetail).show();
 
     window.muatCatatanPerilaku(s.nisn);
+    window.tarikDataKehadiranProfil(s); // Meneruskan profil siswa
 
-    const ctxDonut = document.getElementById('donutChartKehadiran');
-    if (window.donutChartKehadiranInstance) window.donutChartKehadiranInstance.destroy(); 
-    
-    const jmlHadir = parseInt(s.hadir) || 0;
-    const jmlIzin = parseInt(s.izin) || 0;
-    const jmlSakit = parseInt(s.sakit) || 0;
-    const jmlAlpa = parseInt(s.alpa) || 0;
+    setTimeout(() => {
+        const ctxChart = document.getElementById('chartAbsenProfil');
+        if (!ctxChart) return;
+        
+        if (window.chartAbsenProfilInstance) {
+            window.chartAbsenProfilInstance.destroy(); 
+        }
+        
+        window.chartAbsenProfilInstance = new Chart(ctxChart, {
+            type: 'bar',
+            data: {
+                labels: ['Hadir', 'Izin', 'Sakit', 'Alpa'],
+                datasets: [{
+                    label: 'Jumlah Hari',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+                }
+            }
+        });
+    }, 300);
+};
 
-    window.donutChartKehadiranInstance = new Chart(ctxDonut, {
-        type: 'doughnut',
-        data: {
-            labels: ['Hadir', 'Izin', 'Sakit', 'Alpa'],
-            datasets: [{
-                data: [jmlHadir, jmlIzin, jmlSakit, jmlAlpa],
-                backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
-                borderWidth: 2,
-                hoverOffset: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { font: { size: 12 } } }
+// =========================================================================
+// PENARIK DATA KEHADIRAN PROFIL (VERSI FINAL TEROPTIMASI)
+// =========================================================================
+window.tarikDataKehadiranProfil = async function(siswa) {
+    try {
+        // Karena Apps Script sudah benar (mengirim {nisn, status}), 
+        // kita langsung panggil 'get_all_attendance' dengan tenang.
+        const response = await fetch(window.API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_all_attendance" })
+        });
+        const result = await response.json();
+
+        const loadingEl = document.getElementById('loadingKehadiran');
+        if(loadingEl) loadingEl.style.display = 'none';
+
+        if (result.status === "success" && result.data) {
+            let h = 0, i = 0, skt = 0, a = 0;
+            
+            // Siapkan NISN target untuk pencocokan
+            const targetNisn = String(siswa.nisn || "").trim();
+
+            result.data.forEach(row => {
+                // Sekarang format dari server pasti berupa objek JSON
+                let rowNisn = String(row.nisn || "").trim();
+                
+                // Jika NISN dari server cocok dengan NISN profil anak ini
+                if (rowNisn !== "" && rowNisn === targetNisn) {
+                    let st = String(row.status || "").trim().toUpperCase();
+                    if(st === 'H' || st === 'HADIR') h++;
+                    else if(st === 'I' || st === 'IZIN' || st === 'IJIN') i++;
+                    else if(st === 'S' || st === 'SAKIT') skt++;
+                    else if(st === 'A' || st === 'ALPA' || st === 'TANPA KETERANGAN') a++;
+                }
+            });
+
+            const totalHari = h + i + skt + a;
+            const wadahChart = document.getElementById('wadahChartAbsen');
+
+            if (totalHari === 0) {
+                // Jika data memang kosong 
+                if (wadahChart) {
+                    wadahChart.style.height = "auto";
+                    wadahChart.innerHTML = `
+                        <div class="alert alert-light border border-secondary-subtle py-3 mb-0 d-flex flex-column align-items-center">
+                            <i class="fa-solid fa-clipboard-user fa-2x text-muted opacity-50 mb-2"></i>
+                            <span class="text-muted small fw-semibold">Belum ada riwayat kehadiran untuk siswa ini di server.</span>
+                        </div>
+                    `;
+                }
+            } else {
+                // Jika ada isinya, perbarui grafik Bar
+                setTimeout(() => {
+                    if (window.chartAbsenProfilInstance) {
+                        window.chartAbsenProfilInstance.data.datasets[0].data = [h, i, skt, a];
+                        window.chartAbsenProfilInstance.update();
+                    }
+                }, 350); 
             }
         }
-    });
+    } catch (error) {
+        console.error("Gagal menarik data kehadiran:", error);
+        const loadingEl = document.getElementById('loadingKehadiran');
+        if(loadingEl) loadingEl.innerHTML = `<span class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Gagal memuat data dari server.</span>`;
+    }
 };
 
 // =========================================================================
